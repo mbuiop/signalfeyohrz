@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحلیل تایم فرم حرفه‌ای</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Hidden Modal Styles */
+        .hidden-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .hidden-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: linear-gradient(145deg, #2d2d30, #1a1a1d);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+        
+        .hidden-modal.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 30px;
+            color: #ff4757;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .close-btn:hover {
+            background: rgba(255, 71, 87, 0.1);
+            transform: rotate(90deg);
+        }
+        
+        .modal-text {
+            color: #fff;
+            line-height: 1.8;
+            font-size: 16px;
+            text-align: right;
+        }
+        
+        /* Navigation Styles */
+        .navbar-container {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            margin-top: 50px;
+        }
+        
+        .navbar {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 15px 30px;
+            display: flex;
+            gap: 20px;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-button {
+            background: linear-gradient(145deg, #4a90e2, #357abd);
+            border: none;
+            padding: 15px 25px;
+            border-radius: 15px;
+            color: white;
+            font-family: 'Vazirmatn', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 
+                0 8px 20px rgba(74, 144, 226, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transform: translateZ(0);
+        }
+        
+        .nav-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .nav-button:hover::before {
+            left: 100%;
+        }
+        
+        .nav-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 12px 30px rgba(74, 144, 226, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        .nav-button:active {
+            transform: translateY(-1px);
+        }
+        
+        .nav-icon {
+            font-size: 18px;
+        }
+        
+        /* Download App Button Styles */
+        .download-button {
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+            border: none;
+            padding: 15px 25px;
+            border-radius: 15px;
+            color: white;
+            font-family: 'Vazirmatn', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 
+                0 8px 20px rgba(39, 174, 96, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transform: translateZ(0);
+        }
+        
+        .download-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .download-button:hover::before {
+            left: 100%;
+        }
+        
+        .download-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 12px 30px rgba(39, 174, 96, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        .download-button:active {
+            transform: translateY(-1px);
+        }
+        
+        /* Content Area */
+        .content {
+            text-align: center;
+            padding: 50px 20px;
+            color: white;
+        }
+        
+        .content h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .content p {
+            font-size: 1.2em;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        /* Hidden trigger styles */
+        .hidden-trigger {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            width: 20px;
+            height: 20px;
+            background: transparent;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        
+        /* Support Button Styles */
+        .support-button {
+            background: linear-gradient(145deg, #ff6b6b, #ff4757);
+            border: none;
+            padding: 15px 25px;
+            border-radius: 15px;
+            color: white;
+            font-family: 'Vazirmatn', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 
+                0 8px 20px rgba(255, 107, 107, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transform: translateZ(0);
+            margin-top: 20px;
+        }
+        
+        .support-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .support-button:hover::before {
+            left: 100%;
+        }
+        
+        .support-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 12px 30px rgba(255, 107, 107, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        .support-button:active {
+            transform: translateY(-1px);
+        }
+        
+        /* Wallet Address Styles */
+        .wallet-address {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px auto;
+            max-width: 500px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+        
+        .wallet-address:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .wallet-address.copied {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+        
+        .wallet-address::after {
+            content: 'برای کپی کلیک کنید';
+            position: absolute;
+            bottom: -25px;
+            right: 0;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .wallet-address:hover::after {
+            opacity: 1;
+        }
+        
+        /* Support Section */
+        .support-section {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 40px auto;
+            max-width: 700px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .support-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #fff;
+            text-align: center;
+        }
+        
+        .support-description {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 25px;
+            text-align: right;
+        }
+        
+        .trc20-notice {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(100px);
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px;
+                margin: 0 10px;
+            }
+            
+            .nav-button, .download-button {
+                justify-content: center;
+                padding: 18px 20px;
+                font-size: 16px;
+            }
+            
+            .support-button {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .content h1 {
+                font-size: 2em;
+            }
+            
+            .modal-content {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+            
+            .support-section {
+                margin: 20px;
+                padding: 20px;
+            }
+            
+            .wallet-address::after {
+                bottom: -20px;
+                font-size: 10px;
+            }
+        }
+        
+        /* Animation for page load */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .navbar-container {
+            animation: slideUp 0.8s ease-out;
+        }
+        
+        .content {
+            animation: slideUp 1s ease-out 0.2s both;
+        }
+        
+        .support-section {
+            animation: slideUp 1s ease-out 0.4s both;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hidden trigger area -->
+    <div class="hidden-trigger" onclick="showHiddenContent()"></div>
+    
+    <!-- Toast notification -->
+    <div class="toast" id="toast">آدرس کیف پول با موفقیت کپی شد!</div>
+    
+    <!-- Hidden Modal -->
+    <div class="hidden-modal" id="hiddenModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeHiddenContent()">&times;</button>
+            <div class="modal-text" id="modalText">
+                در حال بارگذاری محتوا...
+            </div>
+        </div>
+    </div>
+    
+    <div class="navbar-container">
+        <nav class="navbar">
+            <button class="nav-button" onclick="navigateToPage('m1.html')">
+                <span class="nav-icon">📊</span>
+                <span>تحلیل تایم فرم ۱ساعته</span>
+            </button>
+            
+            <button class="nav-button" onclick="navigateToPage('m2.html')">
+                <span class="nav-icon">📈</span>
+                <span>تحلیل تایم فرم ۲ساعته</span>
+            </button>
+            
+            <button class="nav-button" onclick="navigateToPage('m3.html')">
+                <span class="nav-icon">📉</span>
+                <span>تحلیل تایم فرم ۴ساعته</span>
+            </button>
+            
+            <button class="download-button" onclick="downloadApp()">
+                <span class="nav-icon">📱</span>
+                <span>دانلود اپلیکیشن</span>
+            </button>
+        </nav>
+    </div>
+    
+    <div class="content">
+        <h1>سامانه تحلیل تایم فرم حرفه‌ای</h1>
+        <p>
+            با استفاده از ابزارهای تحلیل پیشرفته، بازارهای مالی را در تایم فرم‌های مختلف مورد بررسی قرار دهید.
+            هر دکمه شما را به صفحه تحلیل مربوطه هدایت می‌کند.
+        </p>
+    </div>
+    
+    <div class="support-section">
+        <h2 class="support-title">حمایت مالی از پروژه (داوطلبانه)</h2>
+        <p class="support-description">
+            این سامانه به صورت کاملاً رایگان و بدون هیچ گونه تعهد مالی در اختیار شما قرار گرفته است. 
+            تمام ابزارهای تحلیلی، نمودارها و خدمات این پلتفرم برای همیشه رایگان خواهد ماند و هیچ گاه هزینه‌ای از شما دریافت نخواهد شد.
+            
+            اگر از خدمات ما راضی هستید و مایل به حمایت داوطلبانه از پروژه می‌باشید، می‌توانید با کمک‌های مالی خود به توسعه و بهبود مستمر این پلتفرم کمک کنید.
+            
+            حمایت‌های مالی شما به ما امکان می‌دهد تا:
+            ✓ قابلیت‌های جدید و پیشرفته‌تر اضافه کنیم
+            ✓ سرعت و عملکرد سایت را بهبود بخشیم
+            ✓ ابزارهای تحلیلی بیشتری ارائه دهیم
+            ✓ پشتیبانی بهتر و سریع‌تری فراهم کنیم
+            ✓ هزینه‌های سرور و نگهداری را تامین کنیم
+            
+            لطفاً توجه داشته باشید که حمایت مالی کاملاً اختیاری و داوطلبانه است و هیچ گونه الزامی برای استفاده از خدمات ما ندارد.
+            هر مقدار حمایت، چه کوچک و چه بزرگ، قدردانی شده و در جهت پیشبرد اهداف آموزشی پروژه استفاده خواهد شد.
+        </p>
+        
+        <div class="trc20-notice">
+            ⚠️ توجه: این آدرس بر بستر TRC20 (شبکه ترون) است. لطفا هنگام ارسال حتما مطمئن شوید که از شبکه TRC20 استفاده می‌کنید تا دارایی شما از دست نرود.
+        </div>
+        
+        <div class="wallet-address" id="walletAddress" onclick="copyWalletAddress()">
+            TV61aTh98MGqmteYzda5AaBzdXgGqreG6A
+        </div>
+        
+        <button class="support-button" onclick="copyWalletAddress()">
+            <span class="nav-icon">❤️</span>
+            <span>کپی آدرس کیف پول برای حمایت</span>
+        </button>
+    </div>
+    
+    <script>
+        let hasShownHidden = false;
+        let hasClosedModal = localStorage.getItem('modalClosed') === 'true';
+        
+        function navigateToPage(url) {
+            // Add loading animation
+            const clickedButton = event.target.closest('.nav-button');
+            clickedButton.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                window.location.href = url;
+            }, 200);
+        }
+        
+        function downloadApp() {
+            // Add loading animation
+            const clickedButton = event.target.closest('.download-button');
+            clickedButton.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                // Create a temporary link to download the APK file
+                const link = document.createElement('a');
+                link.href = 'm.apk';
+                link.download = 'trading-app.apk';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Reset button transform
+                clickedButton.style.transform = '';
+            }, 200);
+        }
+        
+        async function showHiddenContent() {
+            if (hasShownHidden && hasClosedModal) return;
+            
+            hasShownHidden = true;
+            const modal = document.getElementById('hiddenModal');
+            const modalText = document.getElementById('modalText');
+            
+            try {
+                // Try to read the m.txt file
+                const response = await fetch('m.txt');
+                if (response.ok) {
+                    const content = await response.text();
+                    modalText.innerHTML = content.replace(/\n/g, '<br>');
+                } else {
+                    modalText.innerHTML = `
+                        <h3 style="color: #ff6b6b; margin-bottom: 20px;">🔒 محتوای محرمانه</h3>
+                        <p>این بخش مخفی سایت است. فایل m.txt یافت نشد.</p>
+                        <p style="margin-top: 15px; font-size: 14px; opacity: 0.7;">
+                            برای نمایش محتوا، فایل m.txt را در مسیر اصلی پروژه قرار دهید.
+                        </p>
+                    `;
+                }
+            } catch (error) {
+                modalText.innerHTML = `
+                    <h3 style="color: #ff6b6b; margin-bottom: 20px;">🔒 دسترسی محدود</h3>
+                    <p>محتوای مخفی در دسترس نیست.</p>
+                    <p style="margin-top: 15px; font-size: 14px; opacity: 0.7;">
+                        خطا: ${error.message}
+                    </p>
+                `;
+            }
+            
+            modal.classList.add('active');
+        }
+        
+        function closeHiddenContent() {
+            const modal = document.getElementById('hiddenModal');
+            modal.classList.remove('active');
+            localStorage.setItem('modalClosed', 'true');
+            hasClosedModal = true;
+        }
+        
+        function copyWalletAddress() {
+            const walletAddress = "TV61aTh98MGqmteYzda5AaBzdXgGqreG6A";
+            
+            // Create a temporary textarea element
+            const textArea = document.createElement("textarea");
+            textArea.value = walletAddress;
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                // Execute copy command
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    // Show success feedback
+                    const walletElement = document.getElementById('walletAddress');
+                    walletElement.classList.add('copied');
+                    
+                    // Show toast notification
+                    const toast = document.getElementById('toast');
+                    toast.classList.add('show');
+                    
+                    setTimeout(() => {
+                        walletElement.classList.remove('copied');
+                        toast.classList.remove('show');
+                    }, 2000);
+                } else {
+                    alert('خطا در کپی کردن آدرس. لطفا manually آن را کپی کنید: ' + walletAddress);
+                }
+            } catch (err) {
+                alert('خطا در کپی کردن آدرس. لطفا manually آن را کپی کنید: ' + walletAddress);
+            }
+            
+            // Remove temporary element
+            document.body.removeChild(textArea);
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('hiddenModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeHiddenContent();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeHiddenContent();
+            }
+        });
+        
+        // Add subtle parallax effect
+        document.addEventListener('mousemove', function(e) {
+            const navbar = document.querySelector('.navbar');
+            const x = (e.clientX / window.innerWidth) * 10;
+            const y = (e.clientY / window.innerHeight) * 10;
+            
+            navbar.style.transform = `translateX(${x}px) translateY(${y}px)`;
+        });
+        
+        // Check if m.txt has been updated and show modal if it's a new version
+        async function checkForUpdates() {
+            try {
+                const response = await fetch('m.txt?v=' + new Date().getTime());
+                if (response.ok) {
+                    const content = await response.text();
+                    const lastContent = localStorage.getItem('lastContent');
+                    
+                    if (lastContent !== content) {
+                        localStorage.setItem('lastContent', content);
+                        if (!hasClosedModal) {
+                            showHiddenContent();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking for updates:', error);
+            }
+        }
+        
+        // Check for updates on page load
+        window.addEventListener('load', function() {
+            if (!hasClosedModal) {
+                setTimeout(() => {
+                    checkForUpdates();
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
