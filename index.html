@@ -506,9 +506,9 @@
     <div class="container">
         <!-- Download Button - تغییر داده شده برای دانلود مستقیم -->
         <div style="text-align: center; margin-bottom: 20px;">
-    <a href="m.apk" download="m.apk" class="download-btn" id="downloadLink">
-        📱 دانلود اپلیکیشن سایت
-    </a>
+            <a href="m.apk" download="app.apk" class="download-btn" id="downloadLink">
+                📱 دانلود اپلیکیشن سایت
+            </a>
         </div>
 
         <!-- Header -->
@@ -614,25 +614,28 @@
 
             setupDownloadListener() {
                 const downloadLink = document.getElementById('downloadLink');
-                downloadLink.addEventListener('click', function(e) {
-                    // جلوگیری از رفتن به لینک
-                    e.preventDefault();
+                downloadLink.addEventListener('click', (e) => {
+                    // نمایش پیام دانلود
+                    this.showDownloadMessage();
                     
-                    // ایجاد لینک موقت برای دانلود
-                    const link = document.createElement('a');
-                    link.href = 'm.apk';
-                    link.download = 'm.apk';
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    
-                    // شروع دانلود
-                    link.click();
-                    
-                    // حذف لینک موقت
-                    setTimeout(() => {
-                        document.body.removeChild(link);
-                    }, 100);
+                    // اگر فایل APK موجود نباشد، پیام خطا نمایش داده می‌شود
+                    // این یک رفتار پیش‌فرض مرورگر است
                 });
+            }
+
+            showDownloadMessage() {
+                // ایجاد عنصر پیام
+                const message = document.createElement('div');
+                message.className = 'download-message';
+                message.textContent = 'در حال دانلود اپلیکیشن...';
+                
+                // اضافه کردن پیام به صفحه
+                document.body.appendChild(message);
+                
+                // حذف خودکار پیام پس از 3 ثانیه
+                setTimeout(() => {
+                    document.body.removeChild(message);
+                }, 3000);
             }
 
             createFloatingCubes() {
@@ -894,7 +897,7 @@
                                 <div class="indicator-title">🔵 Bollinger Band</div>
                                 <div class="indicator-details">
                                     وزن: ${signal.analysis.upper.weight} | سیگنال: ${signal.analysis.upper.signal.toFixed(2)}<br>
-                                    وضعیت: ${signal.analysis.upper.signal > 0 ? 'دور از مقاومت' : 'نزدیک به مقاومت'}
+                                    وضعیت: ${signal.analysis.upper.signal > 0 ? 'قیمت نزدیک باند پایین' : 'قیمت نزدیک باند بالا'}
                                 </div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: ${Math.min(Math.abs(signal.analysis.upper.signal) * 10, 100)}%"></div>
@@ -917,54 +920,49 @@
                 
                 resultDiv.style.display = 'block';
                 resultDiv.scrollIntoView({ behavior: 'smooth' });
-                
-                // Add to history
-                this.signalHistory.unshift(signal);
-                this.updateHistory();
             }
 
-            updateHistory() {
+            addToHistory(signal) {
+                this.signalHistory.push(signal);
+                
                 const historyContainer = document.getElementById('historyContainer');
                 
-                if (this.signalHistory.length === 0) {
-                    historyContainer.innerHTML = '<p style="text-align: center; opacity: 0.7; font-size: 0.9rem;">هنوز سیگنالی تولید نشده است</p>';
-                    return;
+                if (this.signalHistory.length === 1) {
+                    historyContainer.innerHTML = '';
                 }
                 
-                historyContainer.innerHTML = '';
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
                 
-                this.signalHistory.slice(0, 5).forEach(signal => {
-                    const historyItem = document.createElement('div');
-                    historyItem.className = 'history-item';
-                    
-                    const date = new Date(signal.timestamp).toLocaleString('fa-IR');
-                    
-                    historyItem.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-weight: 600; color: #ffffff;">${signal.symbol}</span>
-                            <span style="font-size: 0.8rem; opacity: 0.7;">${date}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="${signal.directionClass}" style="font-weight: 600;">${signal.direction}</span>
-                            <span style="font-size: 0.8rem; color: #f0f8ff;">اهرم: ${signal.leverage}x</span>
-                        </div>
-                    `;
-                    
-                    historyContainer.appendChild(historyItem);
-                });
+                historyItem.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: 600; color: #ffffff;">${signal.symbol}</span>
+                        <span style="font-size: 0.8rem; color: #f0f8ff;">${new Date(signal.timestamp).toLocaleString('fa-IR')}</span>
+                    </div>
+                    <div style="color: ${signal.directionClass.includes('buy') ? '#00ff88' : '#ff4757'}; font-weight: 600; margin-bottom: 6px;">
+                        ${signal.direction}
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #f0f8ff;">
+                        <span>ورود: ${signal.entry}</span>
+                        <span>سود: ${signal.takeProfit}</span>
+                        <span>ضرر: ${signal.stopLoss}</span>
+                    </div>
+                `;
+                
+                historyContainer.prepend(historyItem);
             }
         }
 
-        // Initialize trading bot
+        // Initialize bot
         const tradingBot = new AdvancedTradingBot();
 
-        // Global functions for button click handlers
+        // Global functions for button clicks
         function generateSignal() {
-            if (!tradingBot.selectedTemplate) {
-                alert('لطفاً ابتدا یک قالب تحلیل انتخاب کنید');
-                return;
-            }
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('signalResult').style.display = 'none';
             
+            // Get form values
             const data = {
                 symbol: document.getElementById('symbol').value || 'BTCUSDT',
                 currentPrice: parseFloat(document.getElementById('currentPrice').value) || 47500,
@@ -977,37 +975,29 @@
                 macd: parseFloat(document.getElementById('macd').value) || 150
             };
             
-            // Show loading
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('signalResult').style.display = 'none';
-            
             // Simulate processing time
             setTimeout(() => {
                 const templateWeights = tradingBot.templates[tradingBot.selectedTemplate];
                 const signal = tradingBot.generateAdvancedSignal(data, templateWeights);
+                
                 tradingBot.displaySignal(signal);
+                tradingBot.addToHistory(signal);
+                
                 document.getElementById('loading').style.display = 'none';
             }, 1500);
         }
 
         function resetForm() {
-            document.getElementById('symbol').value = '';
-            document.getElementById('currentPrice').value = '';
-            document.getElementById('resistance').value = '';
-            document.getElementById('support').value = '';
-            document.getElementById('rsi').value = '';
-            document.getElementById('ema20').value = '';
-            document.getElementById('ema50').value = '';
-            document.getElementById('upper').value = '';
-            document.getElementById('macd').value = '';
-            
+            document.getElementById('inputForm').style.display = 'none';
+            document.getElementById('signalResult').style.display = 'none';
             document.querySelectorAll('.template-card').forEach(card => {
                 card.classList.remove('active');
             });
             
-            document.getElementById('inputForm').style.display = 'none';
-            document.getElementById('signalResult').style.display = 'none';
             tradingBot.selectedTemplate = null;
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 </body>
