@@ -438,6 +438,9 @@
             display: none;
             text-align: center;
             padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin: 20px 0;
         }
 
         .spinner {
@@ -474,72 +477,25 @@
             font-weight: 600;
         }
 
-        /* استایل مودال برای دانلود */
-        .download-modal {
-            display: none;
+        /* استایل برای پیام دانلود */
+        .download-message {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .download-modal-content {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .download-modal h3 {
-            margin-bottom: 15px;
-            color: #ffffff;
-            font-size: 1.2rem;
-        }
-        
-        .download-modal p {
-            margin-bottom: 20px;
-            color: #f0f8ff;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-        
-        .download-modal-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-        
-        .download-modal-btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .download-modal-confirm {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             background: linear-gradient(135deg, #00ff88, #00cc6a);
             color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 10001;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: fadeInOut 3s ease-in-out;
         }
-        
-        .download-modal-cancel {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        .download-modal-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            10%, 90% { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
     </style>
 </head>
@@ -547,22 +503,10 @@
     <!-- 3D Background Animation -->
     <div class="bg-animation" id="bgAnimation"></div>
 
-    <!-- مودال برای تایید دانلود -->
-    <div class="download-modal" id="downloadModal">
-        <div class="download-modal-content">
-            <h3>تایید دانلود اپلیکیشن</h3>
-            <p>آیا مایل به دانلود اپلیکیشن سیستم سیگنال‌دهی پیشرفته هستید؟</p>
-            <div class="download-modal-buttons">
-                <button class="download-modal-btn download-modal-confirm" onclick="confirmDownload()">بله، دانلود کن</button>
-                <button class="download-modal-btn download-modal-cancel" onclick="cancelDownload()">لغو</button>
-            </div>
-        </div>
-    </div>
-
     <div class="container">
-        <!-- Download Button - تغییر داده شده -->
+        <!-- Download Button - تغییر داده شده برای دانلود مستقیم -->
         <div style="text-align: center; margin-bottom: 20px;">
-            <a href="m.apk" class="download-btn" onclick="handleDownload(event)">
+            <a href="m.apk" download="app.apk" class="download-btn" id="downloadLink">
                 📱 دانلود اپلیکیشن سایت
             </a>
         </div>
@@ -651,65 +595,6 @@
     </div>
 
     <script>
-        // تابع مدیریت دانلود
-        function handleDownload(event) {
-            event.preventDefault();
-            // نمایش مودال تایید
-            document.getElementById('downloadModal').style.display = 'flex';
-        }
-        
-        function confirmDownload() {
-            // مخفی کردن مودال
-            document.getElementById('downloadModal').style.display = 'none';
-            
-            // ایجاد لینک موقت برای دانلود
-            const link = document.createElement('a');
-            link.href = 'm.apk';
-            link.download = 'app.apk';
-            document.body.appendChild(link);
-            
-            // نمایش پیام در حال دانلود
-            showDownloadMessage();
-            
-            // شروع دانلود
-            link.click();
-            
-            // حذف لینک موقت
-            document.body.removeChild(link);
-        }
-        
-        function cancelDownload() {
-            // مخفی کردن مودال
-            document.getElementById('downloadModal').style.display = 'none';
-        }
-        
-        function showDownloadMessage() {
-            const messageDiv = document.createElement('div');
-            messageDiv.style.cssText = `
-                position: fixed;
-                top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: linear-gradient(135deg, #00ff88, #00cc6a);
-                color: white;
-                padding: 12px 25px;
-                border-radius: 8px;
-                font-weight: 600;
-                z-index: 10001;
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            `;
-            messageDiv.textContent = 'در حال دانلود اپلیکیشن...';
-            
-            document.body.appendChild(messageDiv);
-            
-            // حذف خودکار پیام بعد از 3 ثانیه
-            setTimeout(() => {
-                if (document.body.contains(messageDiv)) {
-                    document.body.removeChild(messageDiv);
-                }
-            }, 3000);
-        }
-
         // Advanced Trading Bot Class
         class AdvancedTradingBot {
             constructor() {
@@ -724,6 +609,41 @@
                 this.signalHistory = [];
                 this.initializeTemplates();
                 this.createFloatingCubes();
+                this.setupDownloadListener();
+            }
+
+            setupDownloadListener() {
+                const downloadLink = document.getElementById('downloadLink');
+                downloadLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // نمایش پیام دانلود
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'download-message';
+                    messageDiv.textContent = 'در حال دانلود اپلیکیشن...';
+                    document.body.appendChild(messageDiv);
+                    
+                    // حذف خودکار پیام بعد از 3 ثانیه
+                    setTimeout(() => {
+                        if (document.body.contains(messageDiv)) {
+                            document.body.removeChild(messageDiv);
+                        }
+                    }, 3000);
+                    
+                    // ایجاد لینک موقت برای دانلود
+                    const link = document.createElement('a');
+                    link.href = 'm.apk';
+                    link.download = 'app.apk';
+                    document.body.appendChild(link);
+                    
+                    // شروع دانلود
+                    link.click();
+                    
+                    // حذف لینک موقت
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                    }, 100);
+                });
             }
 
             createFloatingCubes() {
@@ -1008,7 +928,7 @@
                             <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9rem;">📋 خلاصه تحلیل:</h4>
                             <p style="line-height: 1.5; font-size: 0.8rem; color: #f0f8ff;">
                                 بر اساس تحلیل پیشرفته ${this.selectedTemplate} و با در نظر گیری وزن‌های تخصصی اندیکاتورها، 
-                                سیگنال نهایی ${signal.direction} با قدرت ${signal.signalStrength.toFixed(1)} درصد تولید شده است.
+                                سیگنال نازی ${signal.direction} با قدرت ${signal.signalStrength.toFixed(1)} درصد تولید شده است.
                                 قیمت فعلی ${signal.currentPrice} و نقطه ورود پیشنهادی ${signal.entry} محاسبه شده است.
                             </p>
                         </div>
