@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>بازی مربع‌های رنگی - نسخه حرفه‌ای</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        
+        body {
+            background: #000;
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            z-index: -1;
+        }
+        
+        .background::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 82, 82, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 195, 74, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 215, 0, 0.05) 0%, transparent 50%);
+            animation: backgroundShift 8s ease-in-out infinite alternate;
+        }
+        
+        @keyframes backgroundShift {
+            0% { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1.1) rotate(1deg); }
+        }
+        
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .header {
+            padding: 15px 20px;
+            background: rgba(20, 20, 20, 0.7);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+        }
+        
+        .header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .level-info {
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+        
+        .game-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            padding: 15px;
+        }
+        
+        .squares-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .square {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: all 0.15s ease;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .square::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .square-color {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .square-number {
+            font-weight: 700;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .controls {
+            padding: 10px 20px 15px;
+            background: rgba(15, 15, 15, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            height: 120px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+        }
+        
+        .joystick-container {
+            width: 90px;
+            height: 90px;
+            background: radial-gradient(circle, rgba(60, 60, 60, 0.9), rgba(30, 30, 30, 0.9));
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            position: relative;
+            touch-action: none;
+            box-shadow: 
+                0 6px 25px rgba(0, 0, 0, 0.7),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .joystick-handle {
+            width: 40px;
+            height: 40px;
+            background: #FF5252;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.05s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.5),
+                0 0 0 3px rgba(255, 255, 255, 0.8);
+            z-index: 5;
+        }
+        
+        .selected-square {
+            position: absolute;
+            width: 65px;
+            height: 65px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.8),
+                0 0 40px currentColor;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0.7) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            background: rgba(0, 0, 0, 0.7);
+        }
+        
+        .selected-square.active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        
+        .selected-square-color {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .selected-square-number {
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: white;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.8);
+        }
+        
+        .coin {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background: radial-gradient(circle at 30% 30%, #FFD700, #D4AF37, #B8860B);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 15px #FFD700,
+                inset -2px -2px 5px rgba(0, 0, 0, 0.4),
+                0 0 20px rgba(255, 215, 0, 0.6);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 25;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transform: scale(1.3);
+            filter: brightness(1.2);
+        }
+        
+        .main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .menu-title {
+            font-size: 3.2rem;
+            margin-bottom: 40px;
+            text-align: center;
+            background: linear-gradient(45deg, #ff6b6b, #ffa726, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            font-weight: 900;
+        }
+        
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 300px;
+        }
+        
+        .menu-btn {
+            padding: 16px 30px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(15px);
+            text-align: center;
+        }
+        
+        .menu-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.12));
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .menu-btn:active {
+            transform: translateY(0);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(15px);
+        }
+        
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, rgba(25, 25, 35, 0.95), rgba(15, 15, 25, 0.98));
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            transform: scale(0.8) translateY(30px);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 
+                0 20px 50px rgba(0, 0, 0, 0.8),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            width: 90%;
+            max-width: 420px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #FFD700, transparent);
+        }
+        
+        .modal.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+        
+        .modal h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #FFD700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            font-weight: 700;
+        }
+        
+        .modal p {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 400;
+            line-height: 1.6;
+        }
+        
+        .close-btn {
+            padding: 12px 35px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        .close-btn:active {
+            transform: scale(0.96);
+        }
+        
+        .cup-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        
+        .cup-item {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .cup-item:hover {
+            transform: scale(1.05);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.2));
+        }
+        
+        .cup-item.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .cup-prize {
+            font-size: 0.9rem;
+            color: #FFD700;
+            margin-top: 5px;
+        }
+        
+        .level-up {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(15px);
+        }
+        
+        .level-up.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .level-up-content {
+            background: linear-gradient(135deg, rgba(25, 25, 35, 0.95), rgba(15, 15, 25, 0.98));
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            transform: scale(0.8) translateY(30px);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 
+                0 20px 50px rgba(0, 0, 0, 0.8),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            width: 85%;
+            max-width: 300px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .level-up-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #FFD700, transparent);
+        }
+        
+        .level-up.active .level-up-content {
+            transform: scale(1) translateY(0);
+        }
+        
+        .level-up h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: #FFD700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            font-weight: 700;
+        }
+        
+        .level-up p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+        
+        .continue-btn {
+            padding: 12px 35px;
+            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .continue-btn:active {
+            transform: scale(0.96);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+        
+        @keyframes explode {
+            0% { 
+                transform: scale(1) rotate(0deg); 
+                opacity: 1; 
+                filter: blur(0px);
+            }
+            50% { 
+                transform: scale(1.2) rotate(180deg); 
+                opacity: 0.7; 
+                filter: blur(2px);
+            }
+            100% { 
+                transform: scale(0) rotate(360deg); 
+                opacity: 0; 
+                filter: blur(5px);
+            }
+        }
+        
+        @keyframes coin-spin {
+            0% { 
+                transform: translate(0, 0) scale(1.3) rotate(0deg); 
+                opacity: 1; 
+            }
+            25% { 
+                transform: translate(0, -70px) scale(1.6) rotate(90deg); 
+                opacity: 1; 
+            }
+            50% { 
+                transform: translate(70px, -130px) scale(1.4) rotate(180deg); 
+                opacity: 1; 
+            }
+            75% { 
+                transform: translate(-70px, -190px) scale(1.2) rotate(270deg); 
+                opacity: 0.8; 
+            }
+            100% { 
+                transform: translate(0, -250px) scale(1) rotate(360deg); 
+                opacity: 0; 
+            }
+        }
+        
+        @keyframes coin-orbit {
+            0% { 
+                transform: 
+                    translate(0, 0) 
+                    scale(1.3) 
+                    rotate(0deg); 
+                opacity: 1; 
+            }
+            25% { 
+                transform: 
+                    translate(90px, -50px) 
+                    scale(1.5) 
+                    rotate(90deg); 
+                opacity: 1; 
+            }
+            50% { 
+                transform: 
+                    translate(-70px, -100px) 
+                    scale(1.4) 
+                    rotate(180deg); 
+                opacity: 1; 
+            }
+            75% { 
+                transform: 
+                    translate(50px, -150px) 
+                    scale(1.2) 
+                    rotate(270deg); 
+                opacity: 0.7; 
+            }
+            100% { 
+                transform: 
+                    translate(0, -200px) 
+                    scale(1.1) 
+                    rotate(360deg); 
+                opacity: 0; 
+            }
+        }
+        
+        @keyframes square-appear {
+            0% { 
+                transform: scale(0) rotate(-180deg); 
+                opacity: 0; 
+            }
+            100% { 
+                transform: scale(1) rotate(0deg); 
+                opacity: 1; 
+            }
+        }
+        
+        @keyframes number-decrease {
+            0% { 
+                transform: scale(1); 
+                color: rgba(255, 255, 255, 0.9);
+            }
+            50% { 
+                transform: scale(1.4); 
+                color: #FFD700;
+            }
+            100% { 
+                transform: scale(1); 
+                color: rgba(255, 255, 255, 0.9);
+            }
+        }
+        
+        .snake-trail {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: currentColor;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 15;
+            opacity: 0.7;
+            filter: blur(0.5px);
+        }
+        
+        @media (max-height: 700px) {
+            .controls {
+                height: 110px;
+                padding: 8px 15px 12px;
+            }
+            
+            .joystick-container {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .joystick-handle {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .squares-container {
+                gap: 6px;
+            }
+            
+            .menu-title {
+                font-size: 2.5rem;
+                margin-bottom: 30px;
+            }
+            
+            .menu-buttons {
+                width: 260px;
+                gap: 15px;
+            }
+            
+            .menu-btn {
+                padding: 14px 25px;
+                font-size: 1.1rem;
+            }
+        }
+        
+        @media (max-width: 380px) {
+            .squares-container {
+                max-width: 350px;
+            }
+            
+            .square {
+                border-radius: 10px;
+            }
+            
+            .square-color {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .square-number {
+                font-size: 0.95rem;
+            }
+            
+            .menu-buttons {
+                width: 240px;
+            }
+            
+            .menu-title {
+                font-size: 2.2rem;
+            }
+            
+            .controls {
+                padding: 8px 15px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Color Match</h1>
+            <div class="level-info">
+                مرحله: <span id="level">1</span> | 
+                امتیاز: <span id="score">0</span>
+            </div>
+        </div>
+        
+        <div class="game-area">
+            <div class="squares-container" id="squaresContainer">
+                <!-- مربع‌ها در اینجا تولید می‌شوند -->
+            </div>
+            
+            <div class="selected-square" id="selectedSquare">
+                <div class="selected-square-color" id="selectedColor"></div>
+                <div class="selected-square-number" id="selectedNumber">0</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="joystick-container" id="joystick">
+                <div class="joystick-handle" id="joystickHandle"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- منوی اصلی -->
+    <div class="main-menu" id="mainMenu">
+        <h1 class="menu-title">Color Match</h1>
+        <div class="menu-buttons">
+            <button class="menu-btn" id="startGameBtn">شروع بازی</button>
+            <button class="menu-btn" id="helpBtn">راهنمایی بازی</button>
+            <button class="menu-btn" id="newsBtn">اطلاعیه‌ها</button>
+            <button class="menu-btn" id="cupsBtn">کاپ‌ها (100)</button>
+        </div>
+    </div>
+    
+    <!-- مودال راهنمایی -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <h2>🎮 راهنمایی بازی</h2>
+            <p>
+                • با جویستیک مربع رنگی را حرکت دهید<br>
+                • مربع را روی مربع‌های هم‌رنگ در صفحه قرار دهید<br>
+                • هر بار که مربع هم‌رنگ را لمس کنید، ۵ امتیاز کم می‌شود<br>
+                • وقتی عدد مربع به صفر رسید، مربع حذف می‌شود<br>
+                • با تکمیل هر مرحله به مرحله بعدی می‌روید<br>
+                • هر مرحله عدد مربع‌ها ۵ واحد افزایش می‌یابد<br>
+                • امتیاز خود را برای باز کردن کاپ‌ها جمع آوری کنید
+            </p>
+            <button class="close-btn" id="closeHelpBtn">بستن</button>
+        </div>
+    </div>
+    
+    <!-- مودال اطلاعیه‌ها -->
+    <div class="modal" id="newsModal">
+        <div class="modal-content">
+            <h2>📢 اطلاعیه‌ها</h2>
+            <p>
+                • به بازی Color Match خوش آمدید!<br>
+                • نسخه جدید بازی با قابلیت‌های پیشرفته<br>
+                • سیستم کاپ‌های جدید با جوایز ویژه<br>
+                • بهینه‌سازی کامل برای عملکرد بهتر<br>
+                • پشتیبانی از میلیون‌ها کاربر همزمان
+            </p>
+            <button class="close-btn" id="closeNewsBtn">بستن</button>
+        </div>
+    </div>
+    
+    <!-- مودال کاپ‌ها -->
+    <div class="modal" id="cupsModal">
+        <div class="modal-content">
+            <h2>🏆 کاپ‌ها</h2>
+            <p>امتیاز شما: <span id="currentScore">0</span></p>
+            <div class="cup-container" id="cupContainer">
+                <!-- کاپ‌ها در اینجا تولید می‌شوند -->
+            </div>
+            <button class="close-btn" id="closeCupsBtn">بستن</button>
+        </div>
+    </div>
+    
+    <div class="level-up" id="levelUp">
+        <div class="level-up-content">
+            <h2>آفرین! 🎉</h2>
+            <p>شما به مرحله <span id="nextLevel">2</span> رسیدید</p>
+            <button class="continue-btn" id="continueBtn">ادامه بازی</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIGURATION ====================
+        const CONFIG = {
+            PERFORMANCE: {
+                MAX_PARTICLES: 25,
+                FRAME_RATE: 60,
+                OPTIMIZED_RENDERING: true
+            },
+            GAME: {
+                INITIAL_LEVEL: 1,
+                INITIAL_SCORE: 0,
+                SQUARE_VALUE: 10,
+                VALUE_INCREMENT: 5,
+                DECREASE_AMOUNT: 5
+            },
+            COLORS: {
+                // فقط دو رنگ - هر کدام 6 مربع
+                COLORS_LIST: [
+                    { name: 'قرمز', color: '#FF5252' },
+                    { name: 'سبز پسته‌ای', color: '#8BC34A' }
+                ]
+            },
+            CUPS: {
+                COUNT: 100,
+                BASE_PRIZE: 1000000,
+                PRIZE_MULTIPLIER: 1.5
+            }
+        };
+
+        // ==================== GAME STATE ====================
+        let gameState = {
+            level: parseInt(localStorage.getItem('colorSquareLevel')) || CONFIG.GAME.INITIAL_LEVEL,
+            score: parseInt(localStorage.getItem('colorSquareScore')) || CONFIG.GAME.INITIAL_SCORE,
+            squares: [],
+            selectedSquare: null,
+            joystickActive: false,
+            joystickDirection: { x: 0, y: 0 },
+            squareSpeed: 25, // افزایش سرعت حرکت مربع
+            gameStarted: false,
+            squareValue: CONFIG.GAME.SQUARE_VALUE,
+            currentJoystickColor: '#FF5252',
+            canChangeColor: true,
+            availableColors: [],
+            unlockedCups: JSON.parse(localStorage.getItem('unlockedCups')) || [],
+            activeDecrease: null,
+            colorUsageCount: new Map(),
+            lastPosition: { x: 0, y: 0 },
+            velocity: { x: 0, y: 0 },
+            acceleration: 1.2, // افزایش شتاب
+            friction: 0.88 // کاهش اصطکاک برای حرکت سریعتر
+        };
+
+        // ==================== DOM ELEMENTS ====================
+        const elements = {
+            squaresContainer: document.getElementById('squaresContainer'),
+            selectedSquare: document.getElementById('selectedSquare'),
+            selectedColor: document.getElementById('selectedColor'),
+            selectedNumber: document.getElementById('selectedNumber'),
+            level: document.getElementById('level'),
+            score: document.getElementById('score'),
+            levelUp: document.getElementById('levelUp'),
+            nextLevel: document.getElementById('nextLevel'),
+            continueBtn: document.getElementById('continueBtn'),
+            joystick: document.getElementById('joystick'),
+            joystickHandle: document.getElementById('joystickHandle'),
+            mainMenu: document.getElementById('mainMenu'),
+            startGameBtn: document.getElementById('startGameBtn'),
+            helpModal: document.getElementById('helpModal'),
+            newsModal: document.getElementById('newsModal'),
+            cupsModal: document.getElementById('cupsModal'),
+            closeHelpBtn: document.getElementById('closeHelpBtn'),
+            closeNewsBtn: document.getElementById('closeNewsBtn'),
+            closeCupsBtn: document.getElementById('closeCupsBtn'),
+            helpBtn: document.getElementById('helpBtn'),
+            newsBtn: document.getElementById('newsBtn'),
+            cupsBtn: document.getElementById('cupsBtn'),
+            cupContainer: document.getElementById('cupContainer'),
+            currentScore: document.getElementById('currentScore')
+        };
+
+        // ==================== PERFORMANCE OPTIMIZATION ====================
+        class PerformanceManager {
+            constructor() {
+                this.frameId = null;
+                this.lastUpdate = 0;
+            }
+
+            requestFrame(callback) {
+                this.frameId = requestAnimationFrame((timestamp) => {
+                    const delta = timestamp - this.lastUpdate;
+                    if (delta >= 1000 / CONFIG.PERFORMANCE.FRAME_RATE) {
+                        this.lastUpdate = timestamp;
+                        callback(timestamp);
+                    }
+                    this.requestFrame(callback);
+                });
+            }
+
+            cancelFrame() {
+                if (this.frameId) {
+                    cancelAnimationFrame(this.frameId);
+                    this.frameId = null;
+                }
+            }
+
+            createCoins(x, y, count = 6) {
+                for (let i = 0; i < count; i++) {
+                    const coin = document.createElement('div');
+                    coin.className = 'coin';
+                    coin.textContent = '🪙';
+                    coin.style.left = `${x}px`;
+                    coin.style.top = `${y}px`;
+                    
+                    const animationType = Math.random() > 0.5 ? 'coin-spin' : 'coin-orbit';
+                    coin.style.animation = `${animationType} ${1 + Math.random() * 0.5}s forwards`;
+                    
+                    document.body.appendChild(coin);
+                    
+                    setTimeout(() => {
+                        if (coin.parentNode) {
+                            coin.parentNode.removeChild(coin);
+                        }
+                    }, 1500);
+                }
+            }
+        }
+
+        const performanceManager = new PerformanceManager();
+
+        // ==================== AUDIO MANAGER ====================
+        class AudioManager {
+            constructor() {
+                this.audioContext = null;
+                this.initialized = false;
+                this.coinSounds = [];
+                this.init();
+            }
+
+            init() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.initialized = true;
+                    this.preloadCoinSounds();
+                } catch (e) {
+                    console.log('Audio not supported');
+                }
+            }
+
+            preloadCoinSounds() {
+                for (let i = 0; i < 5; i++) {
+                    this.createCoinSound();
+                }
+            }
+
+            createCoinSound() {
+                if (!this.initialized) return null;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1200, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                
+                oscillator.type = 'triangle';
+                
+                return { oscillator, gainNode, filter };
+            }
+
+            playCoinSound() {
+                if (!this.initialized) return;
+                
+                const sound = this.createCoinSound();
+                if (!sound) return;
+                
+                const { oscillator, gainNode, filter } = sound;
+                
+                const baseFreq = 800 + Math.random() * 400;
+                oscillator.frequency.setValueAtTime(baseFreq, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(300, this.audioContext.currentTime + 0.2);
+                
+                filter.frequency.setValueAtTime(1500, this.audioContext.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(600, this.audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.2);
+            }
+
+            playExplosionSound() {
+                if (!this.initialized) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(400, this.audioContext.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(100, this.audioContext.currentTime + 0.3);
+                
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(150, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(60, this.audioContext.currentTime + 0.3);
+                
+                gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.3);
+            }
+        }
+
+        const audioManager = new AudioManager();
+
+        // ==================== GAME INITIALIZATION ====================
+        function initGame() {
+            console.log("Initializing game...");
+            setupEventListeners();
+            createCups();
+            updateUI();
+            
+            elements.mainMenu.style.display = 'flex';
+            
+            console.log("Game initialized successfully");
+        }
+
+        function setupEventListeners() {
+            console.log("Setting up event listeners...");
+            
+            elements.startGameBtn.addEventListener('click', startGameFromMenu);
+            elements.helpBtn.addEventListener('click', () => showModal(elements.helpModal));
+            elements.newsBtn.addEventListener('click', () => showModal(elements.newsModal));
+            elements.cupsBtn.addEventListener('click', showCupsModal);
+            elements.closeHelpBtn.addEventListener('click', () => hideModal(elements.helpModal));
+            elements.closeNewsBtn.addEventListener('click', () => hideModal(elements.newsModal));
+            elements.closeCupsBtn.addEventListener('click', () => hideModal(elements.cupsModal));
+            elements.continueBtn.addEventListener('click', nextLevel);
+            
+            setupJoystick();
+            
+            console.log("Event listeners set up successfully");
+        }
+
+        function showModal(modal) {
+            modal.classList.add('active');
+        }
+
+        function hideModal(modal) {
+            modal.classList.remove('active');
+        }
+
+        function showCupsModal() {
+            elements.currentScore.textContent = gameState.score.toLocaleString();
+            showModal(elements.cupsModal);
+        }
+
+        // ==================== GAME FUNCTIONS ====================
+        function startGameFromMenu() {
+            console.log("Starting game from menu...");
+            elements.mainMenu.style.display = 'none';
+            createSquares();
+            setupJoystick();
+            performanceManager.requestFrame(updateGame);
+            startGame();
+        }
+
+        function startGame() {
+            console.log("Game started!");
+            gameState.gameStarted = true;
+            createSelectedSquare();
+        }
+
+        function createSquares() {
+            console.log("Creating squares...");
+            elements.squaresContainer.innerHTML = '';
+            gameState.squares = [];
+            gameState.colorUsageCount.clear();
+            
+            gameState.squareValue = CONFIG.GAME.SQUARE_VALUE + (gameState.level - 1) * CONFIG.GAME.VALUE_INCREMENT;
+            
+            // ایجاد 12 مربع - 6 مربع از هر رنگ
+            const colors = CONFIG.COLORS.COLORS_LIST;
+            const squaresPerColor = 6;
+            
+            let colorIndex = 0;
+            for (let i = 0; i < 12; i++) {
+                const square = document.createElement('div');
+                square.className = 'square';
+                square.style.animation = 'square-appear 0.6s ease-out forwards';
+                
+                const colorData = colors[colorIndex % colors.length];
+                colorIndex++;
+                
+                square.dataset.id = i;
+                square.dataset.color = colorData.name;
+                square.dataset.colorCode = colorData.color;
+                square.dataset.value = gameState.squareValue;
+                
+                if (!gameState.colorUsageCount.has(colorData.color)) {
+                    gameState.colorUsageCount.set(colorData.color, 0);
+                }
+                gameState.colorUsageCount.set(colorData.color, gameState.colorUsageCount.get(colorData.color) + 1);
+                
+                const squareColorElement = document.createElement('div');
+                squareColorElement.className = 'square-color';
+                squareColorElement.style.background = colorData.color;
+                
+                const squareNumber = document.createElement('div');
+                squareNumber.className = 'square-number';
+                squareNumber.textContent = gameState.squareValue;
+                
+                square.appendChild(squareColorElement);
+                square.appendChild(squareNumber);
+                
+                elements.squaresContainer.appendChild(square);
+                gameState.squares.push(square);
+            }
+            
+            changeJoystickColor();
+            console.log("Squares created successfully");
+        }
+
+        function createSelectedSquare() {
+            console.log("Creating selected square...");
+            elements.selectedColor.style.background = gameState.currentJoystickColor;
+            elements.selectedNumber.textContent = gameState.squareValue;
+            
+            const containerRect = elements.squaresContainer.getBoundingClientRect();
+            gameState.lastPosition = {
+                x: containerRect.width / 2 - 32.5,
+                y: containerRect.height / 2 - 32.5
+            };
+            
+            elements.selectedSquare.style.left = `${gameState.lastPosition.x}px`;
+            elements.selectedSquare.style.top = `${gameState.lastPosition.y}px`;
+            
+            elements.selectedSquare.classList.add('active');
+            console.log("Selected square created successfully");
+        }
+
+        function changeJoystickColor() {
+            if (!gameState.gameStarted || !gameState.canChangeColor) return;
+            
+            const availableColorsOnScreen = getAvailableColorsOnScreen();
+            
+            if (availableColorsOnScreen.length === 0) {
+                console.log("No colors available");
+                return;
+            }
+            
+            // اگر فقط یک رنگ موجود است، از آن استفاده کن
+            // اگر دو رنگ موجود است، به صورت تصادفی انتخاب کن
+            const randomIndex = Math.floor(Math.random() * availableColorsOnScreen.length);
+            gameState.currentJoystickColor = availableColorsOnScreen[randomIndex];
+            elements.joystickHandle.style.background = gameState.currentJoystickColor;
+            elements.selectedColor.style.background = gameState.currentJoystickColor;
+            
+            gameState.canChangeColor = false;
+            console.log("Changed joystick color to:", gameState.currentJoystickColor);
+        }
+
+        function getAvailableColorsOnScreen() {
+            const colorCounts = new Map();
+            
+            gameState.squares.forEach(square => {
+                if (square.style.display !== 'none') {
+                    const color = square.dataset.colorCode;
+                    colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+                }
+            });
+            
+            // اگر فقط یک مربع از یک رنگ باقی مانده، آن رنگ را هم شامل شو
+            const availableColors = [];
+            colorCounts.forEach((count, color) => {
+                if (count >= 1) { // تغییر از 2 به 1 - حالا رنگ‌های تکی هم شامل می‌شوند
+                    availableColors.push(color);
+                }
+            });
+            
+            console.log("Available colors:", availableColors);
+            return availableColors;
+        }
+
+        function dropSelectedSquare() {
+            if (!gameState.gameStarted) return;
+            
+            const selectedRect = elements.selectedSquare.getBoundingClientRect();
+            let matched = false;
+            
+            for (let square of gameState.squares) {
+                if (square.style.display !== 'none') {
+                    const squareRect = square.getBoundingClientRect();
+                    
+                    if (isColliding(selectedRect, squareRect)) {
+                        if (square.dataset.colorCode === gameState.currentJoystickColor) {
+                            startDynamicDecrease(square);
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (matched) {
+                gameState.canChangeColor = true;
+                setTimeout(changeJoystickColor, 200); // کاهش زمان انتظار
+            }
+        }
+
+        function startDynamicDecrease(square) {
+            if (gameState.activeDecrease) {
+                clearInterval(gameState.activeDecrease);
+            }
+            
+            let decreaseCount = 0;
+            const maxDecreases = 4; // افزایش تعداد کاهش‌ها
+            
+            gameState.activeDecrease = setInterval(() => {
+                if (decreaseCount >= maxDecreases || square.style.display === 'none') {
+                    clearInterval(gameState.activeDecrease);
+                    gameState.activeDecrease = null;
+                    return;
+                }
+                
+                decreaseSquareValue(square);
+                decreaseCount++;
+                
+            }, 100); // کاهش زمان بین کاهش‌ها
+        }
+
+        function decreaseSquareValue(square) {
+            let currentValue = parseInt(square.dataset.value);
+            
+            if (currentValue <= 0) return;
+            
+            currentValue -= CONFIG.GAME.DECREASE_AMOUNT;
+            if (currentValue < 0) currentValue = 0;
+            
+            square.dataset.value = currentValue;
+            square.querySelector('.square-number').textContent = currentValue;
+            
+            square.querySelector('.square-number').style.animation = 'none';
+            setTimeout(() => {
+                square.querySelector('.square-number').style.animation = 'number-decrease 0.3s ease';
+            }, 10);
+            
+            const rect = square.getBoundingClientRect();
+            performanceManager.createCoins(
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2,
+                4
+            );
+            
+            gameState.score += CONFIG.GAME.DECREASE_AMOUNT;
+            audioManager.playCoinSound();
+            
+            if (currentValue <= 0) {
+                removeSquare(square);
+                clearInterval(gameState.activeDecrease);
+                gameState.activeDecrease = null;
+            }
+            
+            updateUI();
+            saveGame();
+        }
+
+        function removeSquare(square) {
+            const rect = square.getBoundingClientRect();
+            const squareColor = square.dataset.colorCode;
+            
+            if (gameState.colorUsageCount.has(squareColor)) {
+                gameState.colorUsageCount.set(squareColor, gameState.colorUsageCount.get(squareColor) - 1);
+            }
+            
+            performanceManager.createCoins(
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2,
+                10
+            );
+            
+            audioManager.playExplosionSound();
+            
+            square.style.animation = 'explode 0.4s forwards';
+            
+            setTimeout(() => {
+                square.style.display = 'none';
+                checkLevelCompletion();
+                updateUI();
+                saveGame();
+            }, 400);
+        }
+
+        function checkLevelCompletion() {
+            const visibleSquares = gameState.squares.filter(square => square.style.display !== 'none');
+            
+            if (visibleSquares.length === 0) {
+                setTimeout(() => {
+                    showLevelUp();
+                }, 600);
+            }
+        }
+
+        function showLevelUp() {
+            elements.nextLevel.textContent = gameState.level + 1;
+            elements.levelUp.classList.add('active');
+        }
+
+        function nextLevel() {
+            gameState.level++;
+            elements.levelUp.classList.remove('active');
+            createSquares();
+            
+            setTimeout(() => {
+                createSelectedSquare();
+            }, 300);
+        }
+
+        // ==================== CUPS SYSTEM ====================
+        function createCups() {
+            elements.cupContainer.innerHTML = '';
+            
+            for (let i = 1; i <= CONFIG.CUPS.COUNT; i++) {
+                const cupItem = document.createElement('div');
+                cupItem.className = 'cup-item';
+                cupItem.innerHTML = `
+                    <div>🏆 ${i}</div>
+                    <div class="cup-prize">${calculatePrize(i).toLocaleString()} سکه</div>
+                `;
+                
+                if (gameState.unlockedCups.includes(i)) {
+                    cupItem.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.4), rgba(255, 215, 0, 0.3))';
+                } else if (gameState.score >= calculateRequiredScore(i)) {
+                    cupItem.style.background = 'linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.2))';
+                    cupItem.onclick = () => unlockCup(i);
+                } else {
+                    cupItem.classList.add('locked');
+                }
+                
+                elements.cupContainer.appendChild(cupItem);
+            }
+        }
+
+        function calculatePrize(cupNumber) {
+            return Math.floor(CONFIG.CUPS.BASE_PRIZE * Math.pow(CONFIG.CUPS.PRIZE_MULTIPLIER, cupNumber - 1));
+        }
+
+        function calculateRequiredScore(cupNumber) {
+            return cupNumber * 1000;
+        }
+
+        function unlockCup(cupNumber) {
+            if (!gameState.unlockedCups.includes(cupNumber)) {
+                gameState.unlockedCups.push(cupNumber);
+                gameState.score += calculatePrize(cupNumber);
+                localStorage.setItem('unlockedCups', JSON.stringify(gameState.unlockedCups));
+                createCups();
+                updateUI();
+                saveGame();
+                
+                performanceManager.createCoins(window.innerWidth / 2, window.innerHeight / 2, 15);
+                audioManager.playCoinSound();
+            }
+        }
+
+        // ==================== JOYSTICK CONTROLS ====================
+        function setupJoystick() {
+            let joystickRect = elements.joystick.getBoundingClientRect();
+            const joystickCenter = {
+                x: joystickRect.left + joystickRect.width / 2,
+                y: joystickRect.top + joystickRect.height / 2
+            };
+            const maxDistance = joystickRect.width / 2 - 20;
+            
+            function handleMove(e) {
+                if (!gameState.joystickActive || !gameState.gameStarted) return;
+                
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - joystickCenter.x;
+                const deltaY = touch.clientY - joystickCenter.y;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                const limitedDistance = Math.min(distance, maxDistance);
+                const angle = Math.atan2(deltaY, deltaX);
+                
+                const limitedX = Math.cos(angle) * limitedDistance;
+                const limitedY = Math.sin(angle) * limitedDistance;
+                
+                elements.joystickHandle.style.transform = `translate(calc(-50% + ${limitedX}px), calc(-50% + ${limitedY}px))`;
+                
+                gameState.joystickDirection.x = limitedX / maxDistance;
+                gameState.joystickDirection.y = limitedY / maxDistance;
+                
+                createTrail();
+            }
+            
+            function handleEnd() {
+                gameState.joystickActive = false;
+                gameState.joystickDirection.x = 0;
+                gameState.joystickDirection.y = 0;
+                elements.joystickHandle.style.transform = 'translate(-50%, -50%)';
+                
+                dropSelectedSquare();
+            }
+            
+            elements.joystick.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!gameState.gameStarted) return;
+                gameState.joystickActive = true;
+                joystickRect = elements.joystick.getBoundingClientRect();
+                joystickCenter.x = joystickRect.left + joystickRect.width / 2;
+                joystickCenter.y = joystickRect.top + joystickRect.height / 2;
+                handleMove(e);
+            });
+            
+            elements.joystick.addEventListener('touchmove', handleMove);
+            elements.joystick.addEventListener('touchend', handleEnd);
+            elements.joystick.addEventListener('touchcancel', handleEnd);
+            
+            elements.joystick.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                if (!gameState.gameStarted) return;
+                gameState.joystickActive = true;
+                joystickRect = elements.joystick.getBoundingClientRect();
+                joystickCenter.x = joystickRect.left + joystickRect.width / 2;
+                joystickCenter.y = joystickRect.top + joystickRect.height / 2;
+                
+                const fakeEvent = { touches: [{ clientX: e.clientX, clientY: e.clientY }] };
+                handleMove(fakeEvent);
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!gameState.joystickActive) return;
+                const fakeEvent = { touches: [{ clientX: e.clientX, clientY: e.clientY }] };
+                handleMove(fakeEvent);
+            });
+            
+            document.addEventListener('mouseup', handleEnd);
+        }
+
+        function createTrail() {
+            if (!gameState.gameStarted) return;
+            
+            const rect = elements.selectedSquare.getBoundingClientRect();
+            const trail = document.createElement('div');
+            trail.className = 'snake-trail';
+            trail.style.background = gameState.currentJoystickColor;
+            trail.style.left = `${rect.left + rect.width / 2}px`;
+            trail.style.top = `${rect.top + rect.height / 2}px`;
+            
+            document.body.appendChild(trail);
+            
+            setTimeout(() => {
+                if (trail.parentNode) {
+                    trail.parentNode.removeChild(trail);
+                }
+            }, 500);
+        }
+
+        // ==================== GAME LOOP ====================
+        function updateGame(timestamp) {
+            if (gameState.gameStarted) {
+                moveSelectedSquare();
+            }
+        }
+
+        function moveSelectedSquare() {
+            gameState.velocity.x += gameState.joystickDirection.x * gameState.acceleration;
+            gameState.velocity.y += gameState.joystickDirection.y * gameState.acceleration;
+            
+            gameState.velocity.x *= gameState.friction;
+            gameState.velocity.y *= gameState.friction;
+            
+            const maxSpeed = gameState.squareSpeed;
+            const currentSpeed = Math.sqrt(gameState.velocity.x * gameState.velocity.x + gameState.velocity.y * gameState.velocity.y);
+            if (currentSpeed > maxSpeed) {
+                gameState.velocity.x = (gameState.velocity.x / currentSpeed) * maxSpeed;
+                gameState.velocity.y = (gameState.velocity.y / currentSpeed) * maxSpeed;
+            }
+            
+            let newX = gameState.lastPosition.x + gameState.velocity.x;
+            let newY = gameState.lastPosition.y + gameState.velocity.y;
+            
+            const containerRect = elements.squaresContainer.getBoundingClientRect();
+            const margin = 5;
+            newX = Math.max(margin, Math.min(newX, containerRect.width - 65 - margin));
+            newY = Math.max(margin, Math.min(newY, containerRect.height - 65 - margin));
+            
+            elements.selectedSquare.style.left = `${newX}px`;
+            elements.selectedSquare.style.top = `${newY}px`;
+            
+            gameState.lastPosition.x = newX;
+            gameState.lastPosition.y = newY;
+            
+            if (Math.abs(gameState.velocity.x) > 0.1 || Math.abs(gameState.velocity.y) > 0.1) {
+                createTrail();
+            }
+        }
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function isColliding(rect1, rect2) {
+            return !(rect1.right < rect2.left || 
+                     rect1.left > rect2.right || 
+                     rect1.bottom < rect2.top || 
+                     rect1.top > rect2.bottom);
+        }
+
+        function updateUI() {
+            elements.level.textContent = gameState.level;
+            elements.score.textContent = gameState.score.toLocaleString();
+        }
+
+        function saveGame() {
+            localStorage.setItem('colorSquareLevel', gameState.level);
+            localStorage.setItem('colorSquareScore', gameState.score);
+        }
+
+        // ==================== INITIALIZE GAME ====================
+        window.addEventListener('load', initGame);
+        
+        document.addEventListener('touchmove', function(e) {
+            if (e.target === elements.joystick) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gesturechange', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gestureend', function(e) {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
