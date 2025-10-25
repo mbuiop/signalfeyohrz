@@ -43,9 +43,9 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(circle at 20% 80%, rgba(255, 82, 82, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, rgba(139, 195, 74, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(139, 195, 74, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(255, 215, 0, 0.05) 0%, transparent 50%);
+                radial-gradient(circle at 40% 40%, rgba(139, 195, 74, 0.05) 0%, transparent 50%);
             animation: backgroundShift 8s ease-in-out infinite alternate;
         }
         
@@ -75,7 +75,7 @@
         .header h1 {
             font-size: 1.4rem;
             font-weight: 700;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            background: linear-gradient(45deg, #8BC34A, #4ecdc4);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -180,7 +180,7 @@
         .joystick-handle {
             width: 40px;
             height: 40px;
-            background: #FF5252;
+            background: #8BC34A;
             border-radius: 50%;
             position: absolute;
             top: 50%;
@@ -274,7 +274,7 @@
             font-size: 3.2rem;
             margin-bottom: 40px;
             text-align: center;
-            background: linear-gradient(45deg, #ff6b6b, #ffa726, #4ecdc4, #45b7d1);
+            background: linear-gradient(45deg, #8BC34A, #ffa726, #4ecdc4, #45b7d1);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -384,7 +384,7 @@
         
         .close-btn {
             padding: 12px 35px;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+            background: linear-gradient(135deg, #8BC34A 0%, #ffa726 100%);
             border: none;
             border-radius: 50px;
             color: white;
@@ -815,16 +815,15 @@
                 DECREASE_AMOUNT: 5
             },
             COLORS: {
-                // فقط دو رنگ - هر کدام 6 مربع
+                // فقط یک رنگ - سبز پسته‌ای
                 COLORS_LIST: [
-                    { name: 'قرمز', color: '#FF5252' },
                     { name: 'سبز پسته‌ای', color: '#8BC34A' }
                 ]
             },
             CUPS: {
                 COUNT: 100,
-                BASE_PRIZE: 1000000,
-                PRIZE_MULTIPLIER: 1.5
+                BASE_PRIZE: 1000000, // 1 میلیون سکه برای کاپ اول
+                FINAL_PRIZE: 100000000 // 100 میلیون سکه برای کاپ آخر
             }
         };
 
@@ -836,10 +835,10 @@
             selectedSquare: null,
             joystickActive: false,
             joystickDirection: { x: 0, y: 0 },
-            squareSpeed: 25, // افزایش سرعت حرکت مربع
+            squareSpeed: 35,
             gameStarted: false,
             squareValue: CONFIG.GAME.SQUARE_VALUE,
-            currentJoystickColor: '#FF5252',
+            currentJoystickColor: '#8BC34A',
             canChangeColor: true,
             availableColors: [],
             unlockedCups: JSON.parse(localStorage.getItem('unlockedCups')) || [],
@@ -847,8 +846,10 @@
             colorUsageCount: new Map(),
             lastPosition: { x: 0, y: 0 },
             velocity: { x: 0, y: 0 },
-            acceleration: 1.2, // افزایش شتاب
-            friction: 0.88 // کاهش اصطکاک برای حرکت سریعتر
+            acceleration: 1.5,
+            friction: 0.85,
+            lastCollisionTime: 0,
+            collisionCooldown: 100 // زمان تأخیر بین برخوردها (میلی‌ثانیه)
         };
 
         // ==================== DOM ELEMENTS ====================
@@ -986,39 +987,19 @@
                 oscillator.frequency.exponentialRampToValueAtTime(300, this.audioContext.currentTime + 0.2);
                 
                 filter.frequency.setValueAtTime(1500, this.audioContext.currentTime);
-                filter.frequency.exponentialRampToValueAtTime(600, this.audioContext.currentTime + 0.2);
+                filter.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.3);
                 
-                gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
                 
                 oscillator.start(this.audioContext.currentTime);
-                oscillator.stop(this.audioContext.currentTime + 0.2);
-            }
-
-            playExplosionSound() {
-                if (!this.initialized) return;
-                
-                const oscillator = this.audioContext.createOscillator();
-                const gainNode = this.audioContext.createGain();
-                const filter = this.audioContext.createBiquadFilter();
-                
-                oscillator.connect(filter);
-                filter.connect(gainNode);
-                gainNode.connect(this.audioContext.destination);
-                
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(400, this.audioContext.currentTime);
-                filter.frequency.exponentialRampToValueAtTime(100, this.audioContext.currentTime + 0.3);
-                
-                oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(150, this.audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(60, this.audioContext.currentTime + 0.3);
-                
-                gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
-                
-                oscillator.start(this.audioContext.currentTime);
                 oscillator.stop(this.audioContext.currentTime + 0.3);
+                
+                setTimeout(() => {
+                    oscillator.disconnect();
+                    gainNode.disconnect();
+                    filter.disconnect();
+                }, 300);
             }
         }
 
@@ -1090,18 +1071,16 @@
             
             gameState.squareValue = CONFIG.GAME.SQUARE_VALUE + (gameState.level - 1) * CONFIG.GAME.VALUE_INCREMENT;
             
-            // ایجاد 12 مربع - 6 مربع از هر رنگ
+            // ایجاد 12 مربع - همه سبز پسته‌ای
             const colors = CONFIG.COLORS.COLORS_LIST;
-            const squaresPerColor = 6;
+            const squaresCount = 12;
             
-            let colorIndex = 0;
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < squaresCount; i++) {
                 const square = document.createElement('div');
                 square.className = 'square';
                 square.style.animation = 'square-appear 0.6s ease-out forwards';
                 
-                const colorData = colors[colorIndex % colors.length];
-                colorIndex++;
+                const colorData = colors[0]; // فقط رنگ سبز پسته‌ای
                 
                 square.dataset.id = i;
                 square.dataset.color = colorData.name;
@@ -1137,17 +1116,24 @@
             elements.selectedColor.style.background = gameState.currentJoystickColor;
             elements.selectedNumber.textContent = gameState.squareValue;
             
+            // قرار دادن مربع در مرکز صفحه
+            const gameAreaRect = document.querySelector('.game-area').getBoundingClientRect();
             const containerRect = elements.squaresContainer.getBoundingClientRect();
+            
+            // محاسبه موقعیت دقیق مرکز
+            const centerX = (gameAreaRect.width / 2) - (65 / 2);
+            const centerY = (gameAreaRect.height / 2) - (65 / 2);
+            
             gameState.lastPosition = {
-                x: containerRect.width / 2 - 32.5,
-                y: containerRect.height / 2 - 32.5
+                x: centerX,
+                y: centerY
             };
             
             elements.selectedSquare.style.left = `${gameState.lastPosition.x}px`;
             elements.selectedSquare.style.top = `${gameState.lastPosition.y}px`;
             
             elements.selectedSquare.classList.add('active');
-            console.log("Selected square created successfully");
+            console.log("Selected square created successfully at center");
         }
 
         function changeJoystickColor() {
@@ -1160,10 +1146,8 @@
                 return;
             }
             
-            // اگر فقط یک رنگ موجود است، از آن استفاده کن
-            // اگر دو رنگ موجود است، به صورت تصادفی انتخاب کن
-            const randomIndex = Math.floor(Math.random() * availableColorsOnScreen.length);
-            gameState.currentJoystickColor = availableColorsOnScreen[randomIndex];
+            // فقط یک رنگ - سبز پسته‌ای
+            gameState.currentJoystickColor = availableColorsOnScreen[0];
             elements.joystickHandle.style.background = gameState.currentJoystickColor;
             elements.selectedColor.style.background = gameState.currentJoystickColor;
             
@@ -1181,10 +1165,10 @@
                 }
             });
             
-            // اگر فقط یک مربع از یک رنگ باقی مانده، آن رنگ را هم شامل شو
+            // فقط رنگ سبز پسته‌ای
             const availableColors = [];
             colorCounts.forEach((count, color) => {
-                if (count >= 1) { // تغییر از 2 به 1 - حالا رنگ‌های تکی هم شامل می‌شوند
+                if (count >= 1) {
                     availableColors.push(color);
                 }
             });
@@ -1193,8 +1177,13 @@
             return availableColors;
         }
 
-        function dropSelectedSquare() {
+        function checkCollisions() {
             if (!gameState.gameStarted) return;
+            
+            const currentTime = Date.now();
+            if (currentTime - gameState.lastCollisionTime < gameState.collisionCooldown) {
+                return;
+            }
             
             const selectedRect = elements.selectedSquare.getBoundingClientRect();
             let matched = false;
@@ -1207,6 +1196,7 @@
                         if (square.dataset.colorCode === gameState.currentJoystickColor) {
                             startDynamicDecrease(square);
                             matched = true;
+                            gameState.lastCollisionTime = currentTime;
                             break;
                         }
                     }
@@ -1215,7 +1205,7 @@
             
             if (matched) {
                 gameState.canChangeColor = true;
-                setTimeout(changeJoystickColor, 200); // کاهش زمان انتظار
+                setTimeout(changeJoystickColor, 200);
             }
         }
 
@@ -1225,7 +1215,7 @@
             }
             
             let decreaseCount = 0;
-            const maxDecreases = 4; // افزایش تعداد کاهش‌ها
+            const maxDecreases = 4;
             
             gameState.activeDecrease = setInterval(() => {
                 if (decreaseCount >= maxDecreases || square.style.display === 'none') {
@@ -1237,7 +1227,7 @@
                 decreaseSquareValue(square);
                 decreaseCount++;
                 
-            }, 100); // کاهش زمان بین کاهش‌ها
+            }, 100);
         }
 
         function decreaseSquareValue(square) {
@@ -1290,7 +1280,7 @@
                 10
             );
             
-            audioManager.playExplosionSound();
+            audioManager.playCoinSound();
             
             square.style.animation = 'explode 0.4s forwards';
             
@@ -1353,7 +1343,9 @@
         }
 
         function calculatePrize(cupNumber) {
-            return Math.floor(CONFIG.CUPS.BASE_PRIZE * Math.pow(CONFIG.CUPS.PRIZE_MULTIPLIER, cupNumber - 1));
+            // محاسبه جایزه به صورت تصاعدی از 1 میلیون تا 100 میلیون
+            const progress = (cupNumber - 1) / (CONFIG.CUPS.COUNT - 1);
+            return Math.floor(CONFIG.CUPS.BASE_PRIZE + (CONFIG.CUPS.FINAL_PRIZE - CONFIG.CUPS.BASE_PRIZE) * Math.pow(progress, 1.5));
         }
 
         function calculateRequiredScore(cupNumber) {
@@ -1410,8 +1402,6 @@
                 gameState.joystickDirection.x = 0;
                 gameState.joystickDirection.y = 0;
                 elements.joystickHandle.style.transform = 'translate(-50%, -50%)';
-                
-                dropSelectedSquare();
             }
             
             elements.joystick.addEventListener('touchstart', (e) => {
@@ -1472,6 +1462,7 @@
         function updateGame(timestamp) {
             if (gameState.gameStarted) {
                 moveSelectedSquare();
+                checkCollisions(); // بررسی برخورد در هر فریم
             }
         }
 
@@ -1492,10 +1483,10 @@
             let newX = gameState.lastPosition.x + gameState.velocity.x;
             let newY = gameState.lastPosition.y + gameState.velocity.y;
             
-            const containerRect = elements.squaresContainer.getBoundingClientRect();
+            const gameAreaRect = document.querySelector('.game-area').getBoundingClientRect();
             const margin = 5;
-            newX = Math.max(margin, Math.min(newX, containerRect.width - 65 - margin));
-            newY = Math.max(margin, Math.min(newY, containerRect.height - 65 - margin));
+            newX = Math.max(margin, Math.min(newX, gameAreaRect.width - 65 - margin));
+            newY = Math.max(margin, Math.min(newY, gameAreaRect.height - 65 - margin));
             
             elements.selectedSquare.style.left = `${newX}px`;
             elements.selectedSquare.style.top = `${newY}px`;
